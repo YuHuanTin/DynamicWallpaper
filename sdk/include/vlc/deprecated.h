@@ -193,7 +193,7 @@ LIBVLC_API void libvlc_audio_output_set_device_type( libvlc_media_player_t *p_mp
 /**
  * Parse a media.
  *
- * This fetches (local) art, meta data and tracks information.
+ * This fetches (local) art, meta ptrFile and tracks information.
  * The method is synchronous.
  *
  * \deprecated This function could block indefinitely.
@@ -211,7 +211,7 @@ libvlc_media_parse( libvlc_media_t *p_md );
 /**
  * Parse a media.
  *
- * This fetches (local) art, meta data and tracks information.
+ * This fetches (local) art, meta ptrFile and tracks information.
  * The method is the asynchronous of libvlc_media_parse().
  *
  * To track when this is over you can listen to libvlc_MediaParsedChanged

@@ -44,11 +44,11 @@ extern "C" {
 LIBVLC_API void libvlc_vlm_release( libvlc_instance_t *p_instance );
 
 /**
- * Add a broadcast, with one input.
+ * Add a broadcast, with one Input.
  *
  * \param p_instance the instance
  * \param psz_name the name of the new broadcast
- * \param psz_input the input MRL
+ * \param psz_input the Input MRL
  * \param psz_output the output MRL (the parameter to the "sout" variable)
  * \param i_options number of additional options
  * \param ppsz_options additional options
@@ -63,11 +63,11 @@ LIBVLC_API int libvlc_vlm_add_broadcast( libvlc_instance_t *p_instance,
                                              int b_enabled, int b_loop );
 
 /**
- * Add a vod, with one input.
+ * Add a vod, with one Input.
  *
  * \param p_instance the instance
  * \param psz_name the name of the new vod media
- * \param psz_input the input MRL
+ * \param psz_input the Input MRL
  * \param i_options number of additional options
  * \param ppsz_options additional options
  * \param b_enabled boolean for enabling the new vod
@@ -113,12 +113,12 @@ LIBVLC_API int libvlc_vlm_set_output( libvlc_instance_t *p_instance,
                                           const char *psz_output );
 
 /**
- * Set a media's input MRL. This will delete all existing inputs and
+ * Set a media's Input MRL. This will delete all existing inputs and
  * add the specified one.
  *
  * \param p_instance the instance
  * \param psz_name the media to work on
- * \param psz_input the input MRL
+ * \param psz_input the Input MRL
  * \return 0 on success, -1 on error
  */
 LIBVLC_API int libvlc_vlm_set_input( libvlc_instance_t *p_instance,
@@ -126,11 +126,11 @@ LIBVLC_API int libvlc_vlm_set_input( libvlc_instance_t *p_instance,
                                          const char *psz_input );
 
 /**
- * Add a media's input MRL. This will add the specified one.
+ * Add a media's Input MRL. This will add the specified one.
  *
  * \param p_instance the instance
  * \param psz_name the media to work on
- * \param psz_input the input MRL
+ * \param psz_input the Input MRL
  * \return 0 on success, -1 on error
  */
 LIBVLC_API int libvlc_vlm_add_input( libvlc_instance_t *p_instance,
@@ -167,7 +167,7 @@ LIBVLC_API int libvlc_vlm_set_mux( libvlc_instance_t *p_instance,
  *
  * \param p_instance the instance
  * \param psz_name the name of the new broadcast
- * \param psz_input the input MRL
+ * \param psz_input the Input MRL
  * \param psz_output the output MRL (the parameter to the "sout" variable)
  * \param i_options number of additional options
  * \param ppsz_options additional options

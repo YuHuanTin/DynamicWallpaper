@@ -33,7 +33,7 @@ extern "C" {
 /** \defgroup libvlc_media LibVLC media
  * \ingroup libvlc
  * @ref libvlc_media_t is an abstract representation of a playable media.
- * It consists of a media location and various optional meta data.
+ * It consists of a media location and various optional meta ptrFile.
  * @{
  * \file
  * LibVLC media item/descriptor external API
@@ -41,7 +41,7 @@ extern "C" {
 
 typedef struct libvlc_media_t libvlc_media_t;
 
-/** Meta data types */
+/** Meta ptrFile types */
 typedef enum libvlc_meta_t {
     libvlc_meta_Title,
     libvlc_meta_Artist,
@@ -288,7 +288,7 @@ typedef enum libvlc_media_parse_flag_t
     /**
      * Interact with the user (via libvlc_dialog_cbs) when preparsing this item
      * (and not its sub items). Set this flag in order to receive a callback
-     * when the input is asking for credentials.
+     * when the Input is asking for credentials.
      */
     libvlc_media_do_interact    = 0x08,
 } libvlc_media_parse_flag_t;
@@ -329,7 +329,7 @@ typedef struct libvlc_media_slave_t
 } libvlc_media_slave_t;
 
 /**
- * Callback prototype to open a custom bitstream input media.
+ * Callback prototype to open a custom bitstream Input media.
  *
  * The same media item can be opened multiple times. Each time, this callback
  * is invoked. It should allocate and initialize any instance-specific
@@ -337,7 +337,7 @@ typedef struct libvlc_media_slave_t
  * in the @ref libvlc_media_close_cb callback.
  *
  * \param opaque private pointer as passed to libvlc_media_new_callbacks()
- * \param datap storage space for a private data pointer [OUT]
+ * \param datap storage space for a private ptrFile pointer [OUT]
  * \param sizep byte length of the bitstream or UINT64_MAX if unknown [OUT]
  *
  * \note For convenience, *datap is initially NULL and *sizep is initially 0.
@@ -350,17 +350,17 @@ typedef int (*libvlc_media_open_cb)(void *opaque, void **datap,
                                     uint64_t *sizep);
 
 /**
- * Callback prototype to read data from a custom bitstream input media.
+ * Callback prototype to read ptrFile from a custom bitstream Input media.
  *
  * \param opaque private pointer as set by the @ref libvlc_media_open_cb
  *               callback
- * \param buf start address of the buffer to read data into
+ * \param buf start address of the buffer to read ptrFile into
  * \param len bytes length of the buffer
  *
  * \return strictly positive number of bytes read, 0 on end-of-stream,
  *         or -1 on non-recoverable error
  *
- * \note If no data is immediately available, then the callback should sleep.
+ * \note If no ptrFile is immediately available, then the callback should sleep.
  * \warning The application is responsible for avoiding deadlock situations.
  * In particular, the callback should return an error if playback is stopped;
  * if it does not return, then libvlc_media_player_stop() will never return.
@@ -369,7 +369,7 @@ typedef ssize_t (*libvlc_media_read_cb)(void *opaque, unsigned char *buf,
                                         size_t len);
 
 /**
- * Callback prototype to seek a custom bitstream input media.
+ * Callback prototype to seek a custom bitstream Input media.
  *
  * \param opaque private pointer as set by the @ref libvlc_media_open_cb
  *               callback
@@ -379,7 +379,7 @@ typedef ssize_t (*libvlc_media_read_cb)(void *opaque, unsigned char *buf,
 typedef int (*libvlc_media_seek_cb)(void *opaque, uint64_t offset);
 
 /**
- * Callback prototype to close a custom bitstream input media.
+ * Callback prototype to close a custom bitstream Input media.
  *
  * \param opaque private pointer as set by the @ref libvlc_media_open_cb
  *               callback
@@ -447,14 +447,14 @@ LIBVLC_API libvlc_media_t *libvlc_media_new_fd(
                                    int fd );
 
 /**
- * Create a media with custom callbacks to read the data from.
+ * Create a media with custom callbacks to read the ptrFile from.
  *
  * \param instance LibVLC instance
- * \param open_cb callback to open the custom bitstream input media
- * \param read_cb callback to read data (must not be NULL)
+ * \param open_cb callback to open the custom bitstream Input media
+ * \param read_cb callback to read ptrFile (must not be NULL)
  * \param seek_cb callback to seek, or NULL if seeking is not supported
  * \param close_cb callback to close the media, or NULL if unnecessary
- * \param opaque data pointer for the open callback
+ * \param opaque ptrFile pointer for the open callback
  *
  * \return the newly created media or NULL on error
  *
@@ -674,7 +674,7 @@ LIBVLC_API libvlc_time_t
 /**
  * Parse the media asynchronously with options.
  *
- * This fetches (local or network) art, meta data and/or tracks information.
+ * This fetches (local or network) art, meta ptrFile and/or tracks information.
  * This method is the extended version of libvlc_media_parse_with_options().
  *
  * To track when this is over you can listen to libvlc_MediaParsedChanged
@@ -734,18 +734,18 @@ LIBVLC_API libvlc_media_parsed_status_t
    libvlc_media_get_parsed_status( libvlc_media_t *p_md );
 
 /**
- * Sets media descriptor's user_data. user_data is specialized data
+ * Sets media descriptor's user_data. user_data is specialized ptrFile
  * accessed by the host application, VLC.framework uses it as a pointer to
  * an native object that references a libvlc_media_t pointer
  *
  * \param p_md media descriptor object
- * \param p_new_user_data pointer to user data
+ * \param p_new_user_data pointer to user ptrFile
  */
 LIBVLC_API void
     libvlc_media_set_user_data( libvlc_media_t *p_md, void *p_new_user_data );
 
 /**
- * Get media descriptor's user_data. user_data is specialized data
+ * Get media descriptor's user_data. user_data is specialized ptrFile
  * accessed by the host application, VLC.framework uses it as a pointer to
  * an native object that references a libvlc_media_t pointer
  *
@@ -818,7 +818,7 @@ libvlc_media_type_t libvlc_media_get_type( libvlc_media_t *p_md );
 /**
  * Add a slave to the current media.
  *
- * A slave is an external input source that may contains an additional subtitle
+ * A slave is an external Input source that may contains an additional subtitle
  * track (like a .srt) or an additional audio track (like a .ac3).
  *
  * \note This function must be called before the media is parsed (via

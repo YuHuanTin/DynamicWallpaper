@@ -1,13 +1,15 @@
+#ifndef DYNAMICWALLPAPER_CODECVT_H
+#define DYNAMICWALLPAPER_CODECVT_H
+
 #include <memory>
 #include <string>
-#include "windows.h"
+#include <windows.h>
 
+namespace CodeCvt {
+    using std::string;
+    using std::wstring;
+    using std::unique_ptr;
 
-using std::string;
-using std::wstring;
-using std::unique_ptr;
-
-namespace CodeCvt{
     string WstrToStr(const wstring &Src, UINT CodePage) {
         if (Src.empty())
             return "";
@@ -34,6 +36,7 @@ namespace CodeCvt{
         );
         return szResult;
     }
+
     wstring StrToWstr(const string &Src, UINT CodePage) {
         if (Src.empty())
             return L"";
@@ -56,6 +59,7 @@ namespace CodeCvt{
         );
         return wszResult;
     }
+
     unique_ptr<char[]> WstrToStr(wchar_t *Src, UINT CodePage) {
         int len = WideCharToMultiByte(CodePage,
                                       0,
@@ -68,7 +72,7 @@ namespace CodeCvt{
         );
         if (len <= 0)
             return {};
-        unique_ptr<char[]> Dst(new char[len * sizeof(char)]);
+        unique_ptr<char[]> Dst = std::make_unique<char[]>(len * sizeof(char));
         WideCharToMultiByte(CodePage,
                             0,
                             Src,
@@ -80,6 +84,7 @@ namespace CodeCvt{
         );
         return Dst;
     }
+
     unique_ptr<wchar_t[]> StrToWstr(char *Src, UINT CodePage) {
         int len = MultiByteToWideChar(CodePage,
                                       0,
@@ -90,7 +95,7 @@ namespace CodeCvt{
         );
         if (len <= 0)
             return {};
-        unique_ptr<wchar_t[]> Dst(new wchar_t[len * sizeof(wchar_t)]);
+        unique_ptr<wchar_t[]> Dst = std::make_unique<wchar_t[]>(len * sizeof(wchar_t));
         MultiByteToWideChar(CodePage,
                             0,
                             Src,
@@ -101,3 +106,5 @@ namespace CodeCvt{
         return Dst;
     }
 }
+
+#endif //DYNAMICWALLPAPER_CODECVT_H

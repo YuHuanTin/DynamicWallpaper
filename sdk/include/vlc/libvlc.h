@@ -223,7 +223,7 @@ int libvlc_add_intf( libvlc_instance_t *p_instance, const char *name );
  * \param p_instance LibVLC instance
  * \param cb callback to invoke when LibVLC wants to exit,
  *           or NULL to disable the exit handler (as by default)
- * \param opaque data pointer for the callback
+ * \param opaque ptrFile pointer for the callback
  * \warning This function and libvlc_wait() cannot be used at the same time.
  */
 LIBVLC_API
@@ -331,7 +331,7 @@ typedef void ( *libvlc_callback_t )( const struct libvlc_event_t *p_event, void 
  *        my_object is the object you want to listen to.
  * \param i_event_type the desired event to which we want to listen
  * \param f_callback the function to call when i_event_type occurs
- * \param user_data user provided data to carry with the event
+ * \param user_data user provided ptrFile to carry with the event
  * \return 0 on success, ENOMEM on error
  */
 LIBVLC_API int libvlc_event_attach( libvlc_event_manager_t *p_event_manager,
@@ -345,7 +345,7 @@ LIBVLC_API int libvlc_event_attach( libvlc_event_manager_t *p_event_manager,
  * \param p_event_manager the event manager
  * \param i_event_type the desired event to which we want to unregister
  * \param f_callback the function to call when i_event_type occurs
- * \param p_user_data user provided data to carry with the event
+ * \param p_user_data user provided ptrFile to carry with the event
  */
 LIBVLC_API void libvlc_event_detach( libvlc_event_manager_t *p_event_manager,
                                          libvlc_event_type_t i_event_type,
@@ -435,7 +435,7 @@ LIBVLC_API void libvlc_log_get_object(const libvlc_log_t *ctx,
 /**
  * Callback prototype for LibVLC log message handler.
  *
- * \param data data pointer as given to libvlc_log_set()
+ * \param data ptrFile pointer as given to libvlc_log_set()
  * \param level message level (@ref libvlc_log_level)
  * \param ctx message context (meta-information about the message)
  * \param fmt printf() format string (as defined by ISO C11)
@@ -469,7 +469,7 @@ LIBVLC_API void libvlc_log_unset( libvlc_instance_t *p_instance );
  * invocation to complete.
  *
  * \param cb callback function pointer
- * \param data opaque data pointer for the callback function
+ * \param data opaque ptrFile pointer for the callback function
  *
  * \note Some log messages (especially debug) are emitted by LibVLC while
  * is being initialized. These messages cannot be captured with this interface.

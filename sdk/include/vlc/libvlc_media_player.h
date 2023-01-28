@@ -378,7 +378,7 @@ typedef void (*libvlc_video_cleanup_cb)(void *opaque);
 
 
 /**
- * Set callbacks and private data to render decoded video to a custom area
+ * Set callbacks and private ptrFile to render decoded video to a custom area
  * in memory.
  * Use libvlc_video_set_format() or libvlc_video_set_format_callbacks()
  * to configure the decoded format.
@@ -507,10 +507,10 @@ LIBVLC_API void * libvlc_media_player_get_nsobject ( libvlc_media_player_t *p_mi
  * If LibVLC was built without X11 output support, then this function has no
  * effects.
  *
- * By default, LibVLC will capture input events on the video rendering area.
+ * By default, LibVLC will capture Input events on the video rendering area.
  * Use libvlc_video_set_mouse_input() and libvlc_video_set_key_input() to
  * disable that and deliver events to the parent window / to the application
- * instead. By design, the X11 protocol delivers input events to only one
+ * instead. By design, the X11 protocol delivers Input events to only one
  * recipient.
  *
  * \warning
@@ -547,7 +547,7 @@ LIBVLC_API void libvlc_media_player_set_xwindow(libvlc_media_player_t *p_mi,
  * Get the X Window System window identifier previously set with
  * libvlc_media_player_set_xwindow(). Note that this will return the identifier
  * even if VLC is not currently using it (for instance if it is playing an
- * audio-only input).
+ * audio-only Input).
  *
  * \param p_mi the Media Player
  * \return an X window ID, or 0 if none where set.
@@ -617,7 +617,7 @@ LIBVLC_API int libvlc_media_player_set_evas_object( libvlc_media_player_t *p_mi,
  * track sampling rate is 48000 Hz, then 1200 samples represent 25 milliseconds
  * of audio signal - regardless of the number of audio channels.
  *
- * \param data data pointer as passed to libvlc_audio_set_callbacks() [IN]
+ * \param data ptrFile pointer as passed to libvlc_audio_set_callbacks() [IN]
  * \param samples pointer to a table of audio samples to play back [IN]
  * \param count number of audio samples to play back
  * \param pts expected play time stamp (see libvlc_delay())
@@ -631,7 +631,7 @@ typedef void (*libvlc_audio_play_cb)(void *data, const void *samples,
  * LibVLC invokes this callback to pause audio playback.
  *
  * \note The pause callback is never called if the audio is already paused.
- * \param data data pointer as passed to libvlc_audio_set_callbacks() [IN]
+ * \param data ptrFile pointer as passed to libvlc_audio_set_callbacks() [IN]
  * \param pts time stamp of the pause request (should be elapsed already)
  */
 typedef void (*libvlc_audio_pause_cb)(void *data, int64_t pts);
@@ -643,7 +643,7 @@ typedef void (*libvlc_audio_pause_cb)(void *data, int64_t pts);
  * previously paused.
  *
  * \note The resume callback is never called if the audio is not paused.
- * \param data data pointer as passed to libvlc_audio_set_callbacks() [IN]
+ * \param data ptrFile pointer as passed to libvlc_audio_set_callbacks() [IN]
  * \param pts time stamp of the resumption request (should be elapsed already)
  */
 typedef void (*libvlc_audio_resume_cb)(void *data, int64_t pts);
@@ -655,7 +655,7 @@ typedef void (*libvlc_audio_resume_cb)(void *data, int64_t pts);
  * stop playback as soon as possible. This typically occurs when the media is
  * stopped.
  *
- * \param data data pointer as passed to libvlc_audio_set_callbacks() [IN]
+ * \param data ptrFile pointer as passed to libvlc_audio_set_callbacks() [IN]
  */
 typedef void (*libvlc_audio_flush_cb)(void *data, int64_t pts);
 
@@ -666,13 +666,13 @@ typedef void (*libvlc_audio_flush_cb)(void *data, int64_t pts);
  * There will be no further decoded samples for the track, but playback should
  * nevertheless continue until all already pending buffers are rendered.
  *
- * \param data data pointer as passed to libvlc_audio_set_callbacks() [IN]
+ * \param data ptrFile pointer as passed to libvlc_audio_set_callbacks() [IN]
  */
 typedef void (*libvlc_audio_drain_cb)(void *data);
 
 /**
  * Callback prototype for audio volume change.
- * \param data data pointer as passed to libvlc_audio_set_callbacks() [IN]
+ * \param data ptrFile pointer as passed to libvlc_audio_set_callbacks() [IN]
  * \param volume software volume (1. = nominal, 0. = mute)
  * \param mute muted flag
  */
@@ -680,7 +680,7 @@ typedef void (*libvlc_audio_set_volume_cb)(void *data,
                                            float volume, bool mute);
 
 /**
- * Sets callbacks and private data for decoded audio.
+ * Sets callbacks and private ptrFile for decoded audio.
  *
  * Use libvlc_audio_set_format() or libvlc_audio_set_format_callbacks()
  * to configure the decoded audio format.
@@ -707,7 +707,7 @@ void libvlc_audio_set_callbacks( libvlc_media_player_t *mp,
                                  void *opaque );
 
 /**
- * Set callbacks and private data for decoded audio. This only works in
+ * Set callbacks and private ptrFile for decoded audio. This only works in
  * combination with libvlc_audio_set_callbacks().
  * Use libvlc_audio_set_format() or libvlc_audio_set_format_callbacks()
  * to configure the decoded audio format.
@@ -725,7 +725,7 @@ void libvlc_audio_set_volume_callback( libvlc_media_player_t *mp,
  * Callback prototype to setup the audio playback.
  *
  * This is called when the media player needs to create a new audio output.
- * \param opaque pointer to the data pointer passed to
+ * \param opaque pointer to the ptrFile pointer passed to
  *               libvlc_audio_set_callbacks() [IN/OUT]
  * \param format 4 bytes sample format [IN/OUT]
  * \param rate sample rate [IN/OUT]
@@ -739,7 +739,7 @@ typedef int (*libvlc_audio_setup_cb)(void **data, char *format, unsigned *rate,
  * Callback prototype for audio playback cleanup.
  *
  * This is called when the media player no longer needs an audio output.
- * \param opaque data pointer as passed to libvlc_audio_set_callbacks() [IN]
+ * \param opaque ptrFile pointer as passed to libvlc_audio_set_callbacks() [IN]
  */
 typedef void (*libvlc_audio_cleanup_cb)(void *data);
 
@@ -813,7 +813,7 @@ LIBVLC_API float libvlc_media_player_get_position( libvlc_media_player_t *p_mi )
 /**
  * Set movie position as percentage between 0.0 and 1.0.
  * This has no effect if playback is not enabled.
- * This might not work depending on the underlying input format and protocol.
+ * This might not work depending on the underlying Input format and protocol.
  *
  * \param p_mi the Media Player
  * \param f_pos the position
@@ -1124,7 +1124,7 @@ int libvlc_video_get_size( libvlc_media_player_t *p_mi, unsigned num,
  * outside of the video widget.
  *
  * @note LibVLC does not support multiple pointers (it does of course support
- * multiple input devices sharing the same pointer) at the moment.
+ * multiple Input devices sharing the same pointer) at the moment.
  *
  * \param p_mi media player
  * \param num number of the video (starting from, and most commonly 0)
@@ -1383,7 +1383,7 @@ LIBVLC_API libvlc_track_description_t *
  * Get current video track.
  *
  * \param p_mi media player
- * \return the video track ID (int) or -1 if no active input
+ * \return the video track ID (int) or -1 if no active Input
  */
 LIBVLC_API int libvlc_video_get_track( libvlc_media_player_t *p_mi );
 
@@ -1826,7 +1826,7 @@ LIBVLC_API libvlc_track_description_t *
  * Get current audio track.
  *
  * \param p_mi media player
- * \return the audio track ID or -1 if no active input.
+ * \return the audio track ID or -1 if no active Input.
  */
 LIBVLC_API int libvlc_audio_get_track( libvlc_media_player_t *p_mi );
 
