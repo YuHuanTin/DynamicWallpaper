@@ -1,15 +1,68 @@
 #include <iostream>
-#include <thread>
 #include <vector>
-#include <winsock2.h>
 #include <windows.h>
-#include <event.h>
-#include <event2/http.h>
 #include <vlc/vlc.h>
 #include "CodeCvt.h"
 
 // 桌面图标透明度
 double gIconAttributes = 100;
+
+struct StreamManageT {
+    std::unique_ptr<uint8_t[]> ptrFile;
+    std::string                fileName;
+    uint64_t                   fileSize = 0;
+    uint64_t                   filePos  = 0;
+};
+
+class StreamManage {
+private:
+    std::vector<StreamManageT *> vStreamManageT;
+public:
+    void add(const std::string &rawFilePath) {
+        std::string filePath = CodeCvt::WstrToStr(CodeCvt::StrToWstr(rawFilePath, CP_ACP), CP_ACP);
+        std::cout << filePath << '\n';
+        if (filePath.back() == '"')
+            filePath.erase(filePath.end() - 1);
+        if (filePath.front() == '"')
+            filePath = filePath.substr(1, std::string::npos);
+
+        std::string fileName;
+        size_t      pos = 0;
+        if ((pos = filePath.rfind('/')) == std::string::npos && (pos = filePath.rfind('\\')) == std::string::npos)
+            throw std::runtime_error("illegal path");
+        if (filePath.rfind('.') == std::string::npos)
+            fileName = filePath.substr(pos + 1, std::string::npos);
+        else
+            fileName = filePath.substr(pos + 1, filePath.rfind('.') - pos - 1);
+
+        // read file to memory
+        std::FILE *fp = nullptr;
+        if (fopen_s(&fp, filePath.c_str(), "rb") != 0 || fp == nullptr)
+            throw std::runtime_error("failed open file");
+        fseek(fp, 0, SEEK_END);
+        auto fileSize = ftell(fp);
+        fseek(fp, 0, SEEK_SET);
+
+        auto item = new StreamManageT;
+        item->ptrFile  = std::make_unique<uint8_t[]>(fileSize);
+        item->fileName = fileName;
+        item->fileSize = fileSize;
+        item->filePos  = 0;
+        fread(item->ptrFile.get(), 1, fileSize, fp);
+        fclose(fp);
+
+        vStreamManageT.push_back(item);
+    }
+
+    void release() {
+        for (auto &one: vStreamManageT)
+            delete one;
+    }
+
+    std::vector<StreamManageT *> &getReference() {
+        return vStreamManageT;
+    }
+};
 
 class VlcListPlayer {
 private:
@@ -17,6 +70,37 @@ private:
     libvlc_media_list_t        *mediaList       = nullptr;
     libvlc_media_list_player_t *mediaListPlayer = nullptr;
     libvlc_media_player_t      *mediaPlayer     = nullptr;
+
+    static int open_cb(void *opaque, void **datap, uint64_t *sizep) {
+        auto *pStreamManageT = (StreamManageT *) opaque;
+        *datap = pStreamManageT;
+        *sizep = pStreamManageT->fileSize;
+        return 0;
+    }
+
+    static ssize_t read_cb(void *opaque, unsigned char *buf, size_t len) {
+        auto *pStreamManageT = (StreamManageT *) opaque;
+        if (pStreamManageT->filePos + len == pStreamManageT->fileSize)
+            return 0;
+        else if (pStreamManageT->filePos + len > pStreamManageT->fileSize)
+            return -1;
+
+        memcpy(buf, pStreamManageT->ptrFile.get() + pStreamManageT->filePos, len);
+        pStreamManageT->filePos += len;
+        return len;
+    }
+
+    static int seek_cb(void *opaque, uint64_t offset) {
+        auto *pStreamManageT = (StreamManageT *) opaque;
+        pStreamManageT->filePos = offset;
+        return 0;
+    }
+
+    static void close_cb(void *opaque) {
+        auto *pStreamManageT = (StreamManageT *) opaque;
+        pStreamManageT->filePos = 0;
+    }
+
 public:
     VlcListPlayer() {
         inst            = libvlc_new(0, nullptr);
@@ -24,19 +108,19 @@ public:
         mediaPlayer     = libvlc_media_player_new(inst);
     }
 
-    bool addMedia(const std::string &mrl) {
+    bool addMedia(StreamManage &streamManage) {
         if (mediaList == nullptr) {
             mediaList = libvlc_media_list_new(inst);
         }
-        libvlc_media_t *media = libvlc_media_new_location(inst, mrl.c_str());
-        if (media == nullptr) {
-            throw std::runtime_error("媒体错误");
-        }
-        if (libvlc_media_list_add_media(mediaList, media) == -1) {
+        for (auto &one: streamManage.getReference()) {
+            libvlc_media_t *media = libvlc_media_new_callbacks(inst, open_cb, read_cb, seek_cb, close_cb, one);
+            if (media == nullptr) throw std::runtime_error("failed load media");
+            if (libvlc_media_list_add_media(mediaList, media) == -1) {
+                libvlc_media_release(media);
+                return false;
+            }
             libvlc_media_release(media);
-            return false;
         }
-        libvlc_media_release(media);
         return true;
     }
 
@@ -66,116 +150,6 @@ public:
     }
 };
 
-class StreamManage {
-private:
-    struct ManageT {
-        std::vector<uint8_t> *ptrFile;
-        std::string          fileName;
-        uint64_t             hash;
-    };
-    std::vector<ManageT> vManageT;
-public:
-    void removeAllFile() {
-        for (auto &i: vManageT)
-            delete i.ptrFile;
-    }
-
-    void add(const std::string &rawFilePath) {
-        std::string filePath = CodeCvt::WstrToStr(CodeCvt::StrToWstr(rawFilePath, CP_ACP), CP_ACP);
-        std::cout << filePath << '\n';
-        if (filePath.back() == '"')
-            filePath.erase(filePath.end() - 1);
-        if (filePath.front() == '"')
-            filePath = filePath.substr(1, std::string::npos);
-
-        std::string fileName;
-        size_t      pos = 0;
-        if ((pos = filePath.rfind('/')) == std::string::npos && (pos = filePath.rfind('\\')) == std::string::npos)
-            throw std::runtime_error("不合法的路径");
-        if (filePath.rfind('.') == std::string::npos)
-            fileName = filePath.substr(pos + 1, std::string::npos);
-        else
-            fileName = filePath.substr(pos + 1, filePath.rfind('.') - pos - 1);
-
-        // read file to memory
-        FILE *fp;
-        if (fopen_s(&fp, filePath.c_str(), "rb") != 0) {
-            throw std::runtime_error("打开文件失败");
-        }
-        fseek(fp, 0, SEEK_END);
-        size_t fileSize = ftell(fp);
-        fseek(fp, 0, SEEK_SET);
-
-        auto *ptrData = new std::vector<uint8_t>;
-        ptrData->resize(fileSize);
-        fread(ptrData->data(), 1, fileSize, fp);
-        fclose(fp);
-
-        vManageT.push_back({ptrData, fileName, std::hash<std::string>{}(fileName)});
-    }
-
-    // 获取文件的mrl
-    // 类似http://ip:port/0000.xxx
-    std::vector<std::string> requestMrl(short port) {
-        std::vector<std::string> ret;
-        for (auto                &i: vManageT) {
-            ret.push_back({"http://127.0.0.1:" + std::to_string(port) + "/" + std::to_string(i.hash)});
-
-        }
-        return ret;
-    }
-
-    // 返回媒体数据
-    std::vector<uint8_t> *requestData(const std::string &request) {
-        for (const auto &i: vManageT) {
-            if (std::to_string(i.hash) == request)
-                return i.ptrFile;
-        }
-        return nullptr;
-    }
-};
-
-void evhttp_cb(evhttp_request *request, void *userArgs) {
-    // 获取请求内容
-    const char *url = evhttp_request_get_uri(request);
-
-    // 设置响应头
-    evkeyvalq *outputHeaders = evhttp_request_get_output_headers(request);
-    evhttp_add_header(outputHeaders, "Content-Type", "video/mp4");
-
-    // 设置响应正文
-    evbuffer *outputBuffer = evhttp_request_get_output_buffer(request);
-
-    std::string file = url;
-    file = file.substr(1, std::string::npos);
-
-    StreamManage streamManage = *(StreamManage *) userArgs;
-    auto         pData        = streamManage.requestData(file);
-    if (pData != nullptr)
-        evbuffer_add_reference(outputBuffer, pData->data(), pData->size(), nullptr, nullptr);
-
-    evhttp_send_reply(request, HTTP_OK, "", outputBuffer);
-}
-
-void http(short port, StreamManage &streamManage) {
-    WSADATA wsaData;
-    WSAStartup(MAKEWORD(2, 2), &wsaData);
-
-    event_base *eventBase = event_base_new();
-    evhttp *evHttp = evhttp_new(eventBase);
-    if (evhttp_bind_socket(evHttp, "127.0.0.1", port) != 0) {
-        std::cout << "evhttp_bind_socket failed\n";
-        evhttp_free(evHttp);
-        event_base_free(eventBase);
-        return;
-    }
-    //设定回调函数
-    evhttp_set_gencb(evHttp, evhttp_cb, &streamManage);
-    event_base_dispatch(eventBase);
-    evhttp_free(evHttp);
-    event_base_free(eventBase);
-}
-
 BOOL enumWindowsProc(HWND hwnd, LPARAM lparam) {
     HWND hDefView = FindWindowEx(hwnd, nullptr, "SHELLDLL_DefView", nullptr);
     if (hDefView != nullptr) {
@@ -198,8 +172,7 @@ int main() {
 
     StreamManage streamManage;
     std::string  s;
-    short        httpPort = 233;
-    HWND hSecondWorker = nullptr;
+    HWND         hSecondWorker = nullptr;
 
     // 获取用户输入的参数
     {
@@ -219,13 +192,6 @@ int main() {
         }
     }
 
-    // 启动http服务器
-    {
-        std::thread httpServ{http, httpPort, std::ref(streamManage)};
-        httpServ.detach();
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-
     // 设置壁纸
     {
         HWND hProgman = FindWindow("Progman", nullptr);
@@ -235,17 +201,11 @@ int main() {
 
     // 启动播放器
     {
-        VlcListPlayer            player;
-        std::vector<std::string> mediaList = streamManage.requestMrl(httpPort);
-        for (const auto          &i: mediaList) {
-            std::cout << "List: " << i << '\n';
-            if (!player.addMedia(i))
-                std::cout << "add failed";
-        }
+        VlcListPlayer player;
+        player.addMedia(streamManage);
         player.play(hSecondWorker);
         Sleep(INFINITE);
     }
-    streamManage.removeAllFile();
-
+    streamManage.release();
     return 0;
 }
