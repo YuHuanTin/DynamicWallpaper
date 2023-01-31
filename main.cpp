@@ -19,39 +19,40 @@ private:
     std::vector<StreamManageT *> vStreamManageT;
 public:
     void add(const std::string &rawFilePath) {
-        std::string filePath = CodeCvt::WstrToStr(CodeCvt::StrToWstr(rawFilePath, CP_ACP), CP_ACP);
-        std::cout << filePath << '\n';
-        if (filePath.back() == '"')
-            filePath.erase(filePath.end() - 1);
-        if (filePath.front() == '"')
-            filePath = filePath.substr(1, std::string::npos);
+        try {
+            std::string filePath = CodeCvt::WstrToStr(CodeCvt::StrToWstr(rawFilePath, CP_ACP), CP_ACP);
+            if (filePath.back() == '"') filePath.erase(filePath.end() - 1);
+            if (filePath.front() == '"') filePath = filePath.substr(1, std::string::npos);
 
-        std::string fileName;
-        size_t      pos = 0;
-        if ((pos = filePath.rfind('/')) == std::string::npos && (pos = filePath.rfind('\\')) == std::string::npos)
-            throw std::runtime_error("illegal path");
-        if (filePath.rfind('.') == std::string::npos)
-            fileName = filePath.substr(pos + 1, std::string::npos);
-        else
-            fileName = filePath.substr(pos + 1, filePath.rfind('.') - pos - 1);
+            std::string fileName;
+            size_t      pos = 0;
+            if ((pos = filePath.rfind('/')) == std::string::npos && (pos = filePath.rfind('\\')) == std::string::npos)
+                throw std::runtime_error("illegal path");
+            if (filePath.rfind('.') == std::string::npos)
+                fileName = filePath.substr(pos + 1, std::string::npos);
+            else
+                fileName = filePath.substr(pos + 1, filePath.rfind('.') - pos - 1);
 
-        // read file to memory
-        std::FILE *fp = nullptr;
-        if (fopen_s(&fp, filePath.c_str(), "rb") != 0 || fp == nullptr)
-            throw std::runtime_error("failed open file");
-        fseek(fp, 0, SEEK_END);
-        auto fileSize = ftell(fp);
-        fseek(fp, 0, SEEK_SET);
+            // read file to memory
+            std::FILE *fp = nullptr;
+            if (fopen_s(&fp, filePath.c_str(), "rb") != 0 || fp == nullptr)
+                throw std::runtime_error("failed open file");
+            fseek(fp, 0, SEEK_END);
+            auto fileSize = ftell(fp);
+            fseek(fp, 0, SEEK_SET);
 
-        auto item = new StreamManageT;
-        item->ptrFile  = std::make_unique<uint8_t[]>(fileSize);
-        item->fileName = fileName;
-        item->fileSize = fileSize;
-        item->filePos  = 0;
-        fread(item->ptrFile.get(), 1, fileSize, fp);
-        fclose(fp);
+            auto item = new StreamManageT;
+            item->ptrFile  = std::make_unique<uint8_t[]>(fileSize);
+            item->fileName = fileName;
+            item->fileSize = fileSize;
+            item->filePos  = 0;
+            fread(item->ptrFile.get(), 1, fileSize, fp);
+            fclose(fp);
 
-        vStreamManageT.push_back(item);
+            vStreamManageT.push_back(item);
+        } catch (std::runtime_error &error) {
+            std::cout << "error: " << error.what() << '\n';
+        }
     }
 
     void release() {
@@ -103,30 +104,41 @@ private:
 
 public:
     VlcListPlayer() {
-        inst            = libvlc_new(0, nullptr);
-        mediaListPlayer = libvlc_media_list_player_new(inst);
-        mediaPlayer     = libvlc_media_player_new(inst);
+        try {
+            if ((inst            = libvlc_new(0, nullptr)) == nullptr) throw std::runtime_error("failed libvlc_new");
+            if ((mediaListPlayer = libvlc_media_list_player_new(inst)) == nullptr) throw std::runtime_error("failed libvlc_media_list_player_new");
+            if ((mediaPlayer     = libvlc_media_player_new(inst)) == nullptr) throw std::runtime_error("failed libvlc_media_player_new");
+        } catch (std::runtime_error &error) {
+            std::cout << "error: " << error.what() << '\n';
+        }
     }
 
-    bool addMedia(StreamManage &streamManage) {
-        if (mediaList == nullptr) {
-            mediaList = libvlc_media_list_new(inst);
-        }
-        for (auto &one: streamManage.getReference()) {
-            libvlc_media_t *media = libvlc_media_new_callbacks(inst, open_cb, read_cb, seek_cb, close_cb, one);
-            if (media == nullptr) throw std::runtime_error("failed load media");
-            if (libvlc_media_list_add_media(mediaList, media) == -1) {
-                libvlc_media_release(media);
-                return false;
+    void addMedia(StreamManage &streamManage) {
+        try {
+            if (mediaList == nullptr) {
+                if ((mediaList = libvlc_media_list_new(inst)) == nullptr) throw std::runtime_error("failed libvlc_media_list_new");
             }
-            libvlc_media_release(media);
+            for (auto &one: streamManage.getReference()) {
+                libvlc_media_t *media = libvlc_media_new_callbacks(inst, open_cb, read_cb, seek_cb, close_cb, one);
+                if (media == nullptr) throw std::runtime_error("failed libvlc_media_new_callbacks");
+                if (libvlc_media_list_add_media(mediaList, media) == -1) {
+                    libvlc_media_release(media);
+                    throw std::runtime_error("failed libvlc_media_list_add_media");
+                }
+                libvlc_media_release(media);
+            }
+        } catch (std::runtime_error &error) {
+            std::cout << "error: " << error.what() << '\n';
         }
-        return true;
     }
 
-    bool play(HWND videoHwnd = nullptr) {
-        if (mediaPlayer == nullptr || mediaListPlayer == nullptr)
-            return false;
+    void play(HWND videoHwnd = nullptr) {
+        try {
+            if (mediaPlayer == nullptr || mediaListPlayer == nullptr)
+                throw std::runtime_error("player is nullptr");
+        } catch (std::runtime_error &error) {
+            std::cout << "error: " << error.what() << '\n';
+        }
 
         // 设置媒体播放器绑定的窗口句柄
         libvlc_media_player_set_hwnd(mediaPlayer, videoHwnd);
@@ -136,7 +148,6 @@ public:
         // 播放
         libvlc_media_list_player_set_media_list(mediaListPlayer, mediaList);
         libvlc_media_list_player_play(mediaListPlayer);
-        return true;
     }
 
     ~VlcListPlayer() {
@@ -162,9 +173,9 @@ BOOL enumWindowsProc(HWND hwnd, LPARAM lparam) {
 
         HWND *p = (HWND *) lparam;
         *p = hWorkerw;
-        return false;
+        return FALSE;
     }
-    return true;
+    return TRUE;
 }
 
 int main() {
