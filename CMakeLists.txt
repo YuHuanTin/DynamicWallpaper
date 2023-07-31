@@ -3,6 +3,7 @@ project(DynamicWallpaper)
 
 set(CMAKE_CXX_STANDARD 17)
 
+
 include_directories(${PROJECT_SOURCE_DIR}/sdk/include)
 
 add_executable(DynamicWallpaper CodeCvt.h main.cpp)
